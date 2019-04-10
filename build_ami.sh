@@ -1,6 +1,10 @@
 source .env
 
-packer build packer_file.json
+packer build packer/packer_file.json
+
+sleep 5
+
+cd terraform
 
 terraform init
 

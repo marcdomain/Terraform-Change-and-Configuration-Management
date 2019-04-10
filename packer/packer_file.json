@@ -46,23 +46,23 @@
   }],
   "provisioners": [{
     "type": "shell",
-    "script": "./install_ansible.sh",
+    "script": "./ansible/install_ansible.sh",
     "only": ["frontend"]
   }, {
     "type": "ansible",
-    "playbook_file": "./ansible_frontend.yml",
+    "playbook_file": "./ansible/ansible_frontend.yml",
     "only": ["frontend"]
   }, {
     "type": "shell",
-    "script": "./install_ansible.sh",
+    "script": "./ansible/install_ansible.sh",
     "only": ["backend"]
   }, {
     "type": "shell",
-    "script": "./env_backend.sh",
+    "script": "./ansible/env_backend.sh",
     "only": ["backend"]
   }, {
     "type": "ansible",
-    "playbook_file": "./ansible_backend.yml",
+    "playbook_file": "./ansible/ansible_backend.yml",
     "only": ["backend"]
   }]
 }
