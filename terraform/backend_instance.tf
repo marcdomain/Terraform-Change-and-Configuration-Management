@@ -10,8 +10,8 @@ data "aws_ami" "ubuntu-backend" {
 }
 
 resource "aws_instance" "backend" {
-  # count = "${length(var.subnets_cidr)}"
   ami             = "${data.aws_ami.ubuntu-backend.id}"
+  key_name        = "key_pair"
   instance_type   = "${var.instance_type}"
   security_groups = ["${aws_security_group.webservers.id}"]
   subnet_id       = "${element(aws_subnet.public.*.id, 1)}"

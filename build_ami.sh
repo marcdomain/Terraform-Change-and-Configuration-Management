@@ -1,4 +1,4 @@
-source .env
+. packer/.env
 
 packer build packer/packer_file.json
 

@@ -24,9 +24,6 @@ resource "aws_subnet" "public" {
   cidr_block              = "${element(var.subnets_cidr, count.index)}"
   map_public_ip_on_launch = true
 
-  # tags {
-  #   Name = "Subnet-${count.index + 1}"
-  # }
   tags {
     Name = "${element(var.app, count.index)}_subnet"
   }
@@ -46,9 +43,40 @@ resource "aws_route_table" "public-RT" {
   }
 }
 
+resource "aws_subnet" "private" {
+  vpc_id                  = "${aws_vpc.main.id}"
+  availability_zone       = "${element(var.azs, 1)}"
+  cidr_block              = "10.20.5.0/24"
+  map_public_ip_on_launch = false
+
+  tags {
+    Name = "db_subnet"
+  }
+}
+
+resource "aws_route_table" "private_RT" {
+  vpc_id = "${aws_vpc.main.id}"
+
+  route {
+    cidr_block  = "0.0.0.0/0"
+    instance_id = "${aws_instance.nat_instance.id}"
+  }
+
+  tags {
+    Name = "balder_private_RT"
+  }
+
+  depends_on = ["aws_instance.nat_instance"]
+}
+
 # Attach route table with public subnets
 resource "aws_route_table_association" "name" {
   count          = "${length(var.subnets_cidr)}"
   subnet_id      = "${element(aws_subnet.public.*.id, count.index)}"
   route_table_id = "${aws_route_table.public-RT.id}"
+}
+
+resource "aws_route_table_association" "db" {
+  subnet_id      = "${aws_subnet.private.id}"
+  route_table_id = "${aws_route_table.private_RT.id}"
 }

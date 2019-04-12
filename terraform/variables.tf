@@ -25,12 +25,6 @@ variable "azs" {
   default = ["us-east-1a", "us-east-1b"]
 }
 
-# variable "frontend_ami" {
-#   default = "ami-043eb1541e0383582"
-# }
-
-
-# variable "backend_ami" {
-#   default = "ami-0d9a61d15564880c0"
-# }
-
+variable "nat_ami" {
+  default = "ami-00a9d4a05375b2763"
+}
