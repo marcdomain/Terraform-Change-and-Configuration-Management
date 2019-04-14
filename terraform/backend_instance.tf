@@ -1,4 +1,4 @@
-data "aws_ami" "ubuntu-backend" {
+data "aws_ami" "backend" {
   most_recent = true
 
   filter {
@@ -10,11 +10,11 @@ data "aws_ami" "ubuntu-backend" {
 }
 
 resource "aws_instance" "backend" {
-  ami             = "${data.aws_ami.ubuntu-backend.id}"
-  key_name        = "key_pair"
+  ami             = "${data.aws_ami.backend.id}"
+  key_name        = "${aws_key_pair.ec2key.key_name}"
   instance_type   = "${var.instance_type}"
-  security_groups = ["${aws_security_group.webservers.id}"]
-  subnet_id       = "${element(aws_subnet.public.*.id, 1)}"
+  security_groups = ["${aws_security_group.backend.id}"]
+  subnet_id       = "${aws_subnet.private.id}"
 
   tags {
     Name = "backend"

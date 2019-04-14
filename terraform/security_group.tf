@@ -1,6 +1,6 @@
 resource "aws_security_group" "webservers" {
   name        = "webserver all-http"
-  description = "Allow all traffic"
+  description = "Allow all http traffic"
   vpc_id      = "${aws_vpc.main.id}"
 
   ingress {
@@ -25,7 +25,7 @@ resource "aws_security_group" "webservers" {
   }
 }
 
-resource "aws_security_group" "database" {
+resource "aws_security_group" "backend" {
   name        = "db_private_SG"
   description = "Allow connection from nat_instance"
   vpc_id      = "${aws_vpc.main.id}"

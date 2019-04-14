@@ -1,4 +1,4 @@
-data "aws_ami" "ubuntu-frontend" {
+data "aws_ami" "frontend" {
   most_recent = true
 
   filter {
@@ -10,11 +10,11 @@ data "aws_ami" "ubuntu-frontend" {
 }
 
 resource "aws_instance" "frontend" {
-  ami             = "${data.aws_ami.ubuntu-frontend.id}"
-  key_name        = "key_pair"
+  ami             = "${data.aws_ami.frontend.id}"
+  key_name        = "${aws_key_pair.ec2key.key_name}"
   instance_type   = "${var.instance_type}"
   security_groups = ["${aws_security_group.webservers.id}"]
-  subnet_id       = "${element(aws_subnet.public.*.id, 0)}"
+  subnet_id       = "${aws_subnet.public.id}"
 
   tags {
     Name = "frontend"

@@ -28,3 +28,8 @@ variable "azs" {
 variable "nat_ami" {
   default = "ami-00a9d4a05375b2763"
 }
+
+variable "public_key_path" {
+  description = "Public key path"
+  default = "~/.ssh/id_rsa.pub"
+}

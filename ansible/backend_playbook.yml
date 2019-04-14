@@ -1,0 +1,165 @@
+---
+- hosts: all
+  remote_user: ubuntu
+  become_method: sudo
+  become: true
+  vars:
+    project_name: "Authors Haven Backend App"
+    project_path: /home/ubuntu/balder-ah-backend
+    database_name: "balder-ah"
+    database_user: "postgres"
+    db_password: ""
+    sites_available: /etc/nginx/sites-available
+    sites_enabled: /etc/nginx/sites-enabled"
+    sites_available_balder: /etc/nginx/sites-available/balder
+    sites_enabled_balder: /etc/nginx/sites-enabled/balder
+    PM2_PATH: $PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u ubuntu --hp /home/ubuntu
+  tasks:
+    - name: Reset contents of apt list
+      shell: |
+        sudo rm -rf /var/lib/apt/lists/*
+        sudo apt-get update
+
+    - name: Get Nodejs gpg key
+      apt_key:
+        url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"
+        state: present
+
+    - name: Install Nodejs version 10 binary
+      apt_repository:
+        repo: "deb https://deb.nodesource.com/node_10.x {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Install Node
+      apt:
+        name: nodejs
+        state: present
+
+    - name: Clone the repository
+      git:
+        repo: https://github.com/andela/balder-ah-backend.git
+        dest: "{{ project_path }}"
+
+    - name: Get .env file
+      shell: |
+        sudo cat /home/ubuntu/env_variable/.env > .env
+      args:
+        chdir: "{{ project_path }}"
+
+    - name: Install node packages
+      shell: |
+        npm i -ES --unsafe-perm=true
+        sudo npm install -y node-gyp -g -ES --unsafe-perm=true
+      args:
+        chdir: "{{ project_path }}"
+
+    - name: Install latest version of bash, OpenSSl, and libssl
+      apt: name={{ item }} update_cache=true state=latest
+      with_items:
+        - bash
+        - openssl
+        - libssl-dev
+        - libssl-doc
+      tags: packages
+
+    - name: Install PostgreSQL
+      apt: name={{ item }} update_cache=true state=installed
+      with_items:
+        - postgresql
+        - postgresql-contrib
+        - libpq-dev
+        - python-psycopg2
+      tags: packages
+
+    - name: Start PostgreSQL
+      service: name=postgresql state=started enabled=yes
+
+    - name: Create database
+      sudo_user: postgres
+      postgresql_db:
+        name={{ database_name }}
+        encoding='UTF-8'
+        lc_collate='en_US.UTF-8'
+        lc_ctype='en_US.UTF-8'
+        template='template0'
+        state=present
+
+    - name: Provide user credentials to connect to database
+      sudo_user: postgres
+      postgresql_user:
+        db={{ database_name }}
+        name={{ database_user }}
+        password={{ db_password }}
+        priv=ALL
+        state=present
+
+    - name: Checkout to deployment and update start-script
+      shell: |
+        git checkout -b aws-deploy
+        sudo cat /home/ubuntu/package.json > package.json
+      args:
+        chdir: "{{ project_path }}"
+
+    - name: Build app
+      shell: npm run build
+      args:
+        chdir: "{{ project_path }}"
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: latest
+
+    - name: Delete nginx default file
+      file:
+        path: "{{ sites_available }}/default"
+        state: absent
+
+    - name: Configure nginx server
+      shell: |
+        echo "
+          server  {
+            listen 80;
+            location / {
+              proxy_pass 'http://127.0.0.1:3000';
+            }
+          }
+        " > {{ sites_available_balder }}
+
+    - name: Update nginx symlink
+      file:
+        src={{ sites_available_balder }}
+        dest={{ sites_enabled_balder }}
+        state=link
+
+    - name: Start nginx
+      service: 
+        name: nginx
+        state: started
+
+    - name: Install pm2 to run app in background
+      shell: npm install pm2 -g
+
+    - name: Create pm2 start script
+      shell: |
+        cd /home/ubuntu/balder-ah-backend
+        echo '
+          {
+            "apps": [
+              {
+                "name": "authors-haven",
+                "script": "npm",
+                "args": "start"
+              }
+            ]
+          }
+        ' > start_script.config.json
+    
+    - name: Start app with pm2
+      shell: |
+        cd /home/ubuntu/balder-ah-backend
+        sudo pm2 start ./start_script.config.json
+        sleep 30
+        sudo pm2 startup
+        sudo env PATH={{PM2_PATH}}
+        sudo pm2 save
